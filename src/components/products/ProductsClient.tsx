@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -18,6 +19,7 @@ import {
   TrashIcon,
   CubeIcon,
   ExclamationTriangleIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
 interface Props {
@@ -37,7 +39,32 @@ export default function ProductsClient({
   const [filterBrand, setFilterBrand] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const supabase = createClient();
+  const router = useRouter();
+
+  const handleSync = async () => {
+    if (
+      !confirm(
+        "לייבא את כל המוצרים מאתר מגן אופטיק (shop.maop.co.il)? הפעולה תעדכן את הקטלוג."
+      )
+    )
+      return;
+    setSyncing(true);
+    const toastId = toast.loading("מסנכרן מוצרים מהאתר...");
+    try {
+      const res = await fetch("/api/catalog/sync", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "סנכרון נכשל");
+      toast.success(`${data.synced} מוצרים סונכרנו בהצלחה`, { id: toastId });
+      router.refresh();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "סנכרון נכשל";
+      toast.error(message, { id: toastId });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleSave = (product: Product) => {
     if (editingProduct) {
@@ -125,6 +152,14 @@ export default function ProductsClient({
               onChange={(e) => setFilterBrand(e.target.value)}
             />
           </div>
+          <Button
+            variant="secondary"
+            onClick={handleSync}
+            loading={syncing}
+            icon={<ArrowPathIcon className="h-4 w-4" />}
+          >
+            {syncing ? "מסנכרן..." : "סנכרון מהאתר"}
+          </Button>
           <Button
             onClick={() => { setEditingProduct(null); setShowForm(true); }}
             icon={<PlusIcon className="h-4 w-4" />}

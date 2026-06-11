@@ -33,11 +33,21 @@ function getModeForContentType(contentType: string): AIMode {
   return modeMap[contentType] || "sales_copywriter";
 }
 
+export interface AIConfig {
+  provider?: string;
+  model?: string;
+}
+
 export async function generateContent(
-  req: AIGenerateRequest
+  req: AIGenerateRequest,
+  config: AIConfig = {}
 ): Promise<AIGenerateResponse> {
-  const provider = process.env.AI_PROVIDER || "anthropic";
-  const model = process.env.AI_MODEL || "claude-sonnet-4-6";
+  // Precedence: company_settings (DB) → env vars → hard default.
+  const provider = config.provider || process.env.AI_PROVIDER || "anthropic";
+  const model =
+    config.model ||
+    process.env.AI_MODEL ||
+    (provider === "openai" ? "gpt-4o" : "claude-sonnet-4-6");
   const mode = getModeForContentType(req.content_type);
   const systemPrompt = buildSystemPrompt(mode);
   const userPrompt = buildUserPrompt(req);

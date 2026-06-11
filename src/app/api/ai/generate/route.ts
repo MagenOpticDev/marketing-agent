@@ -44,7 +44,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const result = await generateContent(body);
+    // Resolve AI provider/model from company settings (falls back to env)
+    const { data: settings } = await supabase
+      .from("company_settings")
+      .select("ai_provider, ai_model")
+      .single();
+
+    const result = await generateContent(body, {
+      provider: settings?.ai_provider,
+      model: settings?.ai_model,
+    });
 
     // Save to database
     const { data: saved, error: saveError } = await supabase

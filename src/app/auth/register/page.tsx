@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import Select from "@/components/ui/Select";
 import { ShieldCheckIcon } from "@heroicons/react/24/solid";
 
 function GoogleIcon() {
@@ -20,20 +19,11 @@ function GoogleIcon() {
   );
 }
 
-const roleOptions = [
-  { value: "admin", label: "Admin" },
-  { value: "marketing_manager", label: "Marketing Manager" },
-  { value: "sales_manager", label: "Sales Manager" },
-  { value: "sales_agent", label: "Sales Agent" },
-  { value: "viewer", label: "Viewer" },
-];
-
 export default function RegisterPage() {
   const [form, setForm] = useState({
     email: "",
     password: "",
     full_name: "",
-    role: "sales_agent",
   });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -47,7 +37,7 @@ export default function RegisterPage() {
       email: form.email,
       password: form.password,
       options: {
-        data: { full_name: form.full_name, role: form.role },
+        data: { full_name: form.full_name },
       },
     });
     if (error) {
@@ -142,12 +132,6 @@ export default function RegisterPage() {
               required
               minLength={8}
               dir="ltr"
-            />
-            <Select
-              label="Role"
-              options={roleOptions}
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
             />
             <Button type="submit" loading={loading} className="w-full" size="lg">
               {loading ? "Creating account..." : "Create account"}

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import { createClient } from "@/lib/supabase/client";
 import Card from "@/components/ui/Card";
@@ -18,6 +19,7 @@ import {
   TrashIcon,
   ArrowDownTrayIcon,
   MagnifyingGlassIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
@@ -54,7 +56,31 @@ export default function KnowledgeBaseClient({
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState("");
   const [uploadProgress, setUploadProgress] = useState<string>("");
+  const [syncingBlog, setSyncingBlog] = useState(false);
   const supabase = createClient();
+  const router = useRouter();
+
+  const handleSyncBlog = async () => {
+    setSyncingBlog(true);
+    const toastId = toast.loading("מייבא מאמרים ומדריכים מהאתר...");
+    try {
+      const res = await fetch("/api/knowledge/sync-blog", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "ייבוא נכשל");
+      toast.success(
+        data.imported > 0
+          ? `${data.imported} מאמרים חדשים יובאו`
+          : "בסיס הידע מעודכן — אין מאמרים חדשים",
+        { id: toastId }
+      );
+      router.refresh();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "ייבוא נכשל";
+      toast.error(message, { id: toastId });
+    } finally {
+      setSyncingBlog(false);
+    }
+  };
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -174,6 +200,14 @@ export default function KnowledgeBaseClient({
             startIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
           />
         </div>
+        <Button
+          variant="secondary"
+          onClick={handleSyncBlog}
+          loading={syncingBlog}
+          icon={<ArrowPathIcon className="h-4 w-4" />}
+        >
+          {syncingBlog ? "מייבא..." : "ייבוא מאמרים מהאתר"}
+        </Button>
         <div className="text-sm text-slate-500 flex items-center">
           {documents.length} מסמכים
         </div>
